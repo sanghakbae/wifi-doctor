@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>와이파이 닥터 — Mac Wi-Fi 정밀 진단</title>
+<meta name="description" content="Mac 의 Wi-Fi 를 정밀 검사하고, 문제가 무선 구간인지 인터넷 회선인지 짚어 해결 방법을 알려 주는 무료 macOS 앱. 인텔·Apple 칩 모두 지원.">
+<meta property="og:title" content="와이파이 닥터 — Mac Wi-Fi 정밀 진단">
+<meta property="og:description" content="신호·채널 혼잡·지연·DNS·속도를 한 번에 검사하고 PDF 리포트로 저장하는 무료 macOS 앱.">
+<meta property="og:image" content="https://sanghakbae.github.io/wifi-doctor/img/shot0.png">
+<meta property="og:type" content="website">
+<link rel="icon" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root {
+  --bg: #fbfbfd;
+  --surface: #ffffff;
+  --surface-2: #f1f4f6;
+  --text: #1d1d1f;
+  --muted: #6b7076;
+  --line: #e2e5e9;
+  --accent: #0b7285;
+  --accent-ink: #ffffff;
+  --accent-soft: #e3f3f5;
+  --good: #1f8a4c;
+  --warn: #c27c0e;
+  --crit: #c8322b;
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 14px 36px rgba(0,0,0,.09);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1113;
+    --surface: #171b1e;
+    --surface-2: #1f2427;
+    --text: #f2f4f5;
+    --muted: #9ba3a9;
+    --line: #2a3034;
+    --accent: #3fb3c4;
+    --accent-ink: #062126;
+    --accent-soft: #12303a;
+    --good: #4cc27c;
+    --warn: #e2a33a;
+    --crit: #ef6a62;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 14px 36px rgba(0,0,0,.45);
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif;
+  line-height: 1.65; word-break: keep-all;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+img { max-width: 100%; display: block; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+header {
+  position: sticky; top: 0; z-index: 10;
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
+  backdrop-filter: saturate(180%) blur(16px); -webkit-backdrop-filter: saturate(180%) blur(16px);
+  border-bottom: 1px solid var(--line);
+}
+header .wrap { display: flex; align-items: center; justify-content: space-between; height: 56px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 650; color: var(--text); }
+.brand img { width: 28px; height: 28px; border-radius: 7px; }
+.brand:hover { text-decoration: none; }
+nav { display: flex; align-items: center; gap: 22px; font-size: 14px; }
+nav a.link { color: var(--muted); }
+nav a.link:hover { color: var(--text); text-decoration: none; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--accent); color: var(--accent-ink);
+  padding: 12px 24px; border-radius: 999px; font-weight: 650; font-size: 16px;
+  transition: filter .15s ease;
+}
+.btn:hover { text-decoration: none; filter: brightness(1.08); }
+.btn.small { padding: 7px 15px; font-size: 14px; }
+.btn svg { width: 18px; height: 18px; flex: none; }
+.btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+
+.hero { padding-top: 80px; padding-bottom: 36px; text-align: center; }
+.hero .appicon { width: 96px; height: 96px; margin: 0 auto 22px; border-radius: 22px; box-shadow: var(--shadow); }
+.hero h1 { font-size: clamp(32px, 5.4vw, 54px); line-height: 1.18; margin: 0 0 16px; letter-spacing: -0.02em; }
+.hero p.lead { font-size: clamp(17px, 2.2vw, 20px); color: var(--muted); max-width: 640px; margin: 0 auto 30px; }
+.cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.meta { margin-top: 16px; font-size: 13px; color: var(--muted); }
+
+.shot { margin: 44px auto 0; max-width: 1000px; }
+.shot img { border-radius: 12px; border: 1px solid var(--line); box-shadow: var(--shadow); }
+.caption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 12px; }
+
+section { padding: 72px 0; }
+section.alt { background: var(--surface-2); }
+h2 { font-size: clamp(26px, 3.6vw, 36px); line-height: 1.25; margin: 0 0 12px; letter-spacing: -0.01em; }
+.section-lead { color: var(--muted); font-size: 17px; margin: 0 0 36px; max-width: 680px; }
+
+.answer { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.answer div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+.answer b { display: block; font-size: 17px; margin-bottom: 6px; }
+.answer span { color: var(--muted); font-size: 15px; }
+.answer i { font-style: normal; display: inline-block; font-size: 12px; font-weight: 650; padding: 2px 8px; border-radius: 999px; margin-bottom: 10px; }
+.tag-wifi { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
+.tag-isp { background: color-mix(in srgb, var(--crit) 14%, transparent); color: var(--crit); }
+.tag-ok { background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good); }
+
+.checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.check { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+.check h3 { margin: 0 0 6px; font-size: 17px; display: flex; align-items: center; gap: 10px; }
+.check h3 svg { width: 22px; height: 22px; color: var(--accent); flex: none; }
+.check p { margin: 0; color: var(--muted); font-size: 15px; }
+.check ul { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: 14px; }
+
+.feature { display: grid; grid-template-columns: 1fr 1.35fr; gap: 44px; align-items: center; margin-bottom: 64px; }
+.feature:last-child { margin-bottom: 0; }
+.feature.flip > :first-child { order: 2; }
+.feature h3 { font-size: 24px; margin: 0 0 10px; line-height: 1.3; }
+.feature p { color: var(--muted); margin: 0 0 12px; }
+.feature img { border-radius: 10px; border: 1px solid var(--line); box-shadow: var(--shadow); }
+
+.reports { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+.reports span { border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; font-size: 14px; background: var(--surface); }
+
+.specs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 16px; }
+.spec { border-top: 2px solid var(--accent); padding-top: 14px; }
+.spec b { display: block; margin-bottom: 4px; }
+.spec span { color: var(--muted); font-size: 15px; }
+
+.faq details { border-bottom: 1px solid var(--line); padding: 16px 0; }
+.faq summary { cursor: pointer; font-weight: 600; font-size: 17px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; color: var(--muted); font-weight: 400; font-size: 22px; line-height: 1; }
+.faq details[open] summary::after { content: "−"; }
+.faq p { color: var(--muted); margin: 10px 0 0; }
+code { background: var(--surface-2); padding: 1px 6px; border-radius: 5px; font-size: .92em; }
+
+.final { text-align: center; }
+.final p { color: var(--muted); margin: 0 0 26px; }
+footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: 13px; }
+footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+@media (max-width: 760px) {
+  nav a.link { display: none; }
+  .hero { padding-top: 52px; }
+  .meta { font-size: 12px; }
+  .answer { grid-template-columns: 1fr; }
+  .feature, .feature.flip { grid-template-columns: 1fr; gap: 20px; }
+  .feature.flip > :first-child { order: 0; }
+  section { padding: 52px 0; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="#"><img src="img/icon.png" alt="">와이파이 닥터</a>
+    <nav>
+      <a class="link" href="#checks">검사 항목</a>
+      <a class="link" href="#features">기능</a>
+      <a class="link" href="#faq">자주 묻는 질문</a>
+      <a class="btn small" href="https://github.com/sanghakbae/wifi-doctor/releases/latest/download/WiFiDoctor.dmg">다운로드</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="hero wrap">
+    <img class="appicon" src="img/icon.png" alt="와이파이 닥터 아이콘">
+    <h1>와이파이가 느릴 때,<br>어디가 문제인지 알려 드립니다</h1>
+    <p class="lead">신호, 채널 혼잡, 공유기 지연, DNS, 인터넷 속도까지 한 번에 검사하고 원인과 해결 방법을 알려 주는 무료 Mac 앱입니다.</p>
+    <div class="cta">
+      <a class="btn" href="https://github.com/sanghakbae/wifi-doctor/releases/latest/download/WiFiDoctor.dmg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        Mac 용 무료 다운로드
+      </a>
+      <a class="btn ghost" href="#checks">무엇을 검사하나요</a>
+    </div>
+    <p class="meta">macOS 13 이상 · 인텔 Mac · Apple 칩(M1~) 모두 지원 · Apple 공증 완료</p>
+    <figure class="shot">
+      <img src="img/shot0.png" width="1600" height="1114" alt="진단 결과 화면: 31점 나쁨, 공유기 구간 패킷 손실과 약한 신호 등 고칠 문제 9건과 해결 방법">
+      <figcaption class="caption">진단 결과 화면 (예시 데이터)</figcaption>
+    </figure>
+  </div>
+
+  <section class="alt">
+    <div class="wrap">
+      <h2>"와이파이가 이상해요"의 진짜 원인을 짚습니다</h2>
+      <p class="section-lead">느린 이유는 Mac 과 공유기 사이일 수도, 공유기 너머 통신사 회선일 수도 있습니다. 와이파이 닥터는 두 구간을 따로 재서 어디부터 고치면 되는지 한 줄로 알려 줍니다.</p>
+      <div class="answer">
+        <div><i class="tag-wifi">무선 구간</i><b>Mac ↔ 공유기</b><span>신호가 약하거나, 이웃과 채널이 겹치거나, 잡음이 크면 여기서 끊기고 느려집니다. 위치·채널·대역을 바꾸면 해결됩니다.</span></div>
+        <div><i class="tag-isp">공유기 너머</i><b>공유기 ↔ 인터넷</b><span>공유기까지는 빠른데 인터넷이 느리면 회선, DNS, 요금제, 공유기 성능 문제입니다. 통신사 문의가 필요한지 알 수 있습니다.</span></div>
+        <div><i class="tag-ok">이상 없음</i><b>둘 다 정상</b><span>측정값이 모두 정상 범위면 그렇다고 말해 줍니다. 괜히 공유기를 바꾸지 않아도 됩니다.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="checks">
+    <div class="wrap">
+      <h2>7가지 영역을 실제로 측정합니다</h2>
+      <p class="section-lead">추정이 아니라 Mac 의 무선 칩과 네트워크에서 직접 값을 읽고 잽니다. 기본 검사는 측정 시간 15초에 10초 남짓, 속도 측정을 켜면 20초 정도 더 걸립니다.</p>
+      <div class="checks">
+        <div class="check">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><path d="M2 9a15 15 0 0 1 20 0"/><circle cx="12" cy="19.5" r="1"/></svg>신호 세기</h3>
+          <p>신호(RSSI)와 잡음, 신호 대 잡음비(SNR)를 0.5초마다 기록해 평균과 흔들림, 순간 끊김까지 봅니다.</p>
+        </div>
+        <div class="check">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10"/><path d="M9 20V4"/><path d="M14 20v-7"/><path d="M19 20V8"/></svg>채널·간섭</h3>
+          <p>주변 네트워크를 검색해 채널 폭까지 반영한 겹침을 계산하고, 가장 한산한 채널을 추천합니다.</p>
+        </div>
+        <div class="check">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 13v8"/><path d="M8.5 9.5a5 5 0 0 1 7 0"/><path d="M5.5 6.5a9 9 0 0 1 13 0"/><circle cx="12" cy="12" r="1.2"/></svg>무선 연결</h3>
+          <p>전송 속도, Wi-Fi 4~7 규격, 로밍 횟수, IP 주소 이상(169.254)을 확인합니다.</p>
+        </div>
+        <div class="check">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6"/></svg>지연·손실</h3>
+          <p>공유기까지 ping 을 보내 평균·95% 지연, 지터(흔들림), 패킷 손실을 잽니다. 화상 회의 끊김의 직접 원인입니다.</p>
+        </div>
+        <div class="check">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18"/><path d="M12 3a14 14 0 0 0 0 18"/></svg>인터넷·DNS</h3>
+          <p>외부 서버 연결 시간, DNS 응답, 호텔·카페의 로그인 페이지 막힘을 확인합니다. ping 을 막은 회사망에서도 잴 수 있습니다.</p>
+        </div>
+        <div class="check">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 14l4-4"/><path d="M3.5 17a9 9 0 1 1 17 0"/></svg>속도·응답성</h3>
+          <p>다운로드·업로드 속도와, 누군가 큰 파일을 받을 때 반응이 얼마나 느려지는지(버퍼블로트)를 잽니다.</p>
+        </div>
+        <div class="check">
+          <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v6c0 4 3 7.5 7 9 4-1.5 7-5 7-9V6z"/><path d="m9 12 2 2 4-4"/></svg>보안</h3>
+          <p>암호 없는 네트워크, WEP·WPA(TKIP) 같은 오래된 보안 방식을 경고합니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" class="alt">
+    <div class="wrap">
+      <div class="feature">
+        <div>
+          <h3>문제마다 원인과 해결 방법을 함께</h3>
+          <p>"신호가 약합니다"로 끝내지 않습니다. 왜 그런지, 무엇부터 해 보면 되는지를 순서대로 적어 줍니다. 100점 만점 점수와 항목별 상태로 한눈에 봅니다.</p>
+          <p>"공유기 채널을 11번으로 바꿔 보세요"처럼, 주변을 측정한 결과에 맞춘 구체적인 제안도 합니다.</p>
+        </div>
+        <img src="img/shot0.png" width="1600" height="1114" loading="lazy" alt="문제 목록과 해결 방법이 표시된 진단 결과 화면">
+      </div>
+      <div class="feature flip">
+        <div>
+          <h3>신호가 언제 흔들렸는지 그래프로</h3>
+          <p>측정하는 동안의 신호 세기, 잡음, 무선 전송 속도, 공유기 응답 시간을 그래프로 보여 줍니다. 순간적으로 신호가 떨어진 구간도 놓치지 않습니다.</p>
+        </div>
+        <img src="img/shot1.png" width="1600" height="1114" loading="lazy" alt="신호 세기와 잡음, 무선 전송 속도 그래프">
+      </div>
+      <div class="feature">
+        <div>
+          <h3>주변 네트워크와 채널 지도</h3>
+          <p>2.4GHz·5GHz·6GHz 대역별로 어느 채널에 얼마나 강한 이웃이 있는지 보여 줍니다. 내 네트워크는 초록색으로 표시됩니다.</p>
+        </div>
+        <img src="img/shot2.png" width="1600" height="1114" loading="lazy" alt="대역별 채널 지도와 주변 네트워크 목록">
+      </div>
+      <div class="feature flip">
+        <div>
+          <h3>리포트로 저장해 공유하세요</h3>
+          <p>검사 결과를 A4 쪽 나눔이 된 PDF, 웹 브라우저로 여는 HTML, 텍스트용 Markdown 으로 저장할 수 있습니다. 통신사나 IT 담당자에게 그대로 보내면 됩니다.</p>
+          <div class="reports"><span>PDF (⌘S)</span><span>HTML</span><span>Markdown</span><span>텍스트 복사</span></div>
+        </div>
+        <div class="specs">
+          <div class="spec"><b>인텔 · Apple 칩 겸용</b><span>하나의 앱이 두 칩에서 기본 형식으로 실행됩니다.</span></div>
+          <div class="spec"><b>Apple 공증</b><span>Developer ID 로 서명하고 Apple 공증을 받아 경고 없이 열립니다.</span></div>
+          <div class="spec"><b>데이터를 보내지 않음</b><span>측정 결과는 Mac 에만 남습니다. 계정·광고·추적이 없습니다.</span></div>
+          <div class="spec"><b>macOS 기본 도구 활용</b><span>CoreWLAN, ping, dig, networkQuality 등 macOS 내장 도구로 잽니다.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap faq">
+      <h2>자주 묻는 질문</h2>
+      <details>
+        <summary>위치 권한은 왜 필요한가요?</summary>
+        <p>macOS 14 부터는 위치 권한이 있어야 앱이 Wi-Fi 이름(SSID)과 공유기 주소(BSSID)를 읽을 수 있습니다. 같은 이름의 5GHz 대역이 있는지, 공유기 사이를 오갔는지 판정하는 데 씁니다. 위치 자체는 읽거나 저장하지 않으며, 허용하지 않아도 나머지 검사는 모두 됩니다.</p>
+      </details>
+      <details>
+        <summary>속도 측정은 데이터를 얼마나 쓰나요?</summary>
+        <p>macOS 내장 networkQuality 를 최대 20초 실행하며, 회선 속도에 따라 수백 MB 를 쓸 수 있습니다. 데이터 요금이 걱정되면 상단의 "속도 측정"을 끄고 검사하세요.</p>
+      </details>
+      <details>
+        <summary>회사·학교 네트워크에서도 되나요?</summary>
+        <p>네. 외부 ping 을 막은 망에서는 이를 감지하고, 인터넷 지연을 TCP 연결 시간으로 대신 잽니다. 회사망에서 DNS 를 바꾸라는 안내가 나오면 먼저 IT 담당자와 상의하세요.</p>
+      </details>
+      <details>
+        <summary>점수는 어떻게 매기나요?</summary>
+        <p>7개 영역마다 가장 나쁜 항목만큼 감점합니다. 심각한 문제가 하나라도 있으면 50점 미만, 주의할 문제가 있으면 85점 미만이 됩니다. 90점 이상은 "아주 좋음"입니다.</p>
+      </details>
+      <details>
+        <summary>터미널에서도 쓸 수 있나요?</summary>
+        <p><code>/Applications/WiFiDoctor.app/Contents/MacOS/WiFiDoctor --cli --pdf ~/Desktop/wifi.pdf</code> 처럼 실행하면 화면 없이 검사해 Markdown 리포트를 출력하고 PDF 로 저장합니다. <code>--no-speed</code>, <code>--seconds 30</code>, <code>--html 파일</code> 옵션도 있습니다.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="alt final">
+    <div class="wrap">
+      <h2>지금 Wi-Fi 를 검사해 보세요</h2>
+      <p>무료 · 설치 후 바로 실행 · 1분이면 결과가 나옵니다</p>
+      <a class="btn" href="https://github.com/sanghakbae/wifi-doctor/releases/latest/download/WiFiDoctor.dmg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        Mac 용 무료 다운로드
+      </a>
+      <p class="meta" style="margin-top:16px">DMG 를 열고 와이파이 닥터를 응용 프로그램 폴더로 끌어다 놓으세요.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 와이파이 닥터 · <a href="https://www.sanghak.kr">sanghak.kr</a></span>
+    <span><a href="https://github.com/sanghakbae/wifi-doctor/releases">모든 버전</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
